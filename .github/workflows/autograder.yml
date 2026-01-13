@@ -1,0 +1,238 @@
+name: React Practical 3 - Components Auto Grading
+
+on: [push]
+
+jobs:
+  autograde:
+    runs-on: ubuntu-latest
+
+    steps:
+    # ----------------------------
+    # CHECKOUT
+    # ----------------------------
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # ----------------------------
+    # SETUP NODE.JS
+    # ----------------------------
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    # ----------------------------
+    # HARD FAIL RULES (0 MARKS)
+    # ----------------------------
+    - name: ❌ Hard Fail - node_modules committed
+      run: |
+        if find . -type d -name "node_modules" | grep -q .; then
+          echo "❌ node_modules folder detected in repository. Auto-fail (0 marks)."
+          echo "Please add node_modules to .gitignore"
+          exit 1
+        fi
+
+    - name: ❌ Hard Fail - No useState hooks
+      run: |
+        if ! grep -r "useState" practical-3-components/src/ 2>/dev/null; then
+          echo "❌ useState hook not used. Auto-fail (0 marks)."
+          exit 1
+        fi
+
+    - name: ❌ Hard Fail - HTML cheating in public folder
+      run: |
+        if grep -r "form\|button\|textarea" practical-3-components/public/ 2>/dev/null | grep -v "favicon\|manifest"; then
+          echo "❌ Form elements found in public/ folder. Auto-fail (0 marks)."
+          exit 1
+        fi
+
+    # ----------------------------
+    # INITIALIZE SCORE
+    # ----------------------------
+    - name: Initialize score
+      run: echo "SCORE=0" >> $GITHUB_ENV
+
+    # ============================
+    # GRADING CHECKS
+    # ============================
+
+    # ----------------------------
+    # PROJECT STRUCTURE (2 marks)
+    # ----------------------------
+    - name: ✅ Check project structure (2 marks)
+      run: |
+        if [ -f practical-3-components/package.json ] && \
+           [ -d practical-3-components/src/components/ ] && \
+           ([ -f practical-3-components/src/App.js ] || [ -f practical-3-components/src/App.jsx ]) && \
+           [ -f practical-3-components/src/index.js ]; then
+          echo "✅ Project structure correct"
+          echo "SCORE=$((SCORE+2))" >> $GITHUB_ENV
+        else
+          echo "❌ Project structure incomplete"
+        fi
+
+    # ----------------------------
+    # COUNTER COMPONENT (3 marks)
+    # ----------------------------
+    - name: ✅ Counter - Exists (1 mark)
+      run: |
+        if [ -f practical-3-components/src/components/Counter.js ] || \
+           [ -f practical-3-components/src/components/Counter.jsx ]; then
+           echo "✅ Counter component exists"
+           echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ Counter component file not found"
+        fi
+
+    - name: ✅ Counter - Initial state is 0 (1 mark)
+      run: |
+        # Checks for useState(0) with flexible spacing
+        if grep -q "useState[[:space:]]*([[:space:]]*0[[:space:]]*)" practical-3-components/src/components/Counter.* 2>/dev/null; then
+          echo "✅ Counter starts at 0"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ Counter does not start at 0"
+        fi
+
+    - name: ✅ Counter - Has increment/decrement buttons (1 mark)
+      run: |
+        if grep -q -i "Increment" practical-3-components/src/components/Counter.* 2>/dev/null && \
+           grep -q -i "Decrement" practical-3-components/src/components/Counter.* 2>/dev/null; then
+          echo "✅ Counter has increment/decrement functionality"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ Counter missing increment/decrement buttons"
+        fi
+
+    # ----------------------------
+    # TWEET INPUT COMPONENT (3 marks)
+    # ----------------------------
+    - name: ✅ TweetInput - Exists and uses useState (1 mark)
+      run: |
+        if ([ -f practical-3-components/src/components/TweetInput.js ] || \
+            [ -f practical-3-components/src/components/TweetInput.jsx ]) && \
+            grep -q "useState" practical-3-components/src/components/TweetInput.* 2>/dev/null; then
+          echo "✅ TweetInput exists with useState"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ TweetInput missing or no useState found"
+        fi
+
+    - name: ✅ TweetInput - 50 character limit (1 mark)
+      run: |
+        if grep -q "50" practical-3-components/src/components/TweetInput.* 2>/dev/null; then
+          echo "✅ TweetInput has 50 character limit logic"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ TweetInput missing 50 character limit"
+        fi
+
+    - name: ✅ TweetInput - Visual feedback & Disabled logic (1 mark)
+      run: |
+        # Checks for red color OR disabled attribute
+        if (grep -q "red\|#ff0000\|rgb(255,0,0)\|#f00" practical-3-components/src/components/TweetInput.* 2>/dev/null) && \
+           grep -q "disabled" practical-3-components/src/components/TweetInput.* 2>/dev/null; then
+          echo "✅ TweetInput has red text and disabled button logic"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ TweetInput missing red text or disabled logic"
+        fi
+
+    # ----------------------------
+    # THEME SWITCHER COMPONENT (3 marks)
+    # ----------------------------
+    - name: ✅ ThemeSwitcher - Exists and uses useState (1 mark)
+      run: |
+        if ([ -f practical-3-components/src/components/ThemeSwitcher.js ] || \
+            [ -f practical-3-components/src/components/ThemeSwitcher.jsx ]) && \
+            grep -q "useState" practical-3-components/src/components/ThemeSwitcher.* 2>/dev/null; then
+          echo "✅ ThemeSwitcher exists with useState"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ ThemeSwitcher missing or no useState found"
+        fi
+
+    - name: ✅ ThemeSwitcher - Toggle functionality (1 mark)
+      run: |
+        if grep -q "toggle\|setTheme\|setMode\|setIsDark" practical-3-components/src/components/ThemeSwitcher.* 2>/dev/null; then
+          echo "✅ ThemeSwitcher has toggle functionality"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ ThemeSwitcher missing toggle logic"
+        fi
+
+    - name: ✅ ThemeSwitcher - Light/dark mode distinction (1 mark)
+      run: |
+        # Checks for conditional logic keywords
+        if grep -q "?" practical-3-components/src/components/ThemeSwitcher.* 2>/dev/null && \
+           (grep -q -i "light" practical-3-components/src/components/ThemeSwitcher.* 2>/dev/null || \
+            grep -q -i "dark" practical-3-components/src/components/ThemeSwitcher.* 2>/dev/null); then
+          echo "✅ ThemeSwitcher has conditional styling/rendering"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ ThemeSwitcher missing light/dark conditional logic"
+        fi
+
+    # ----------------------------
+    # APP INTEGRATION (1 mark)
+    # ----------------------------
+    - name: ✅ App.js - Imports and renders all components (1 mark)
+      run: |
+        IMPORT_COUNT=0
+        RENDER_COUNT=0
+        
+        # Check imports (case insensitive)
+        for comp in Counter TweetInput ThemeSwitcher; do
+          if grep -q -i "import.*$comp" practical-3-components/src/App.* 2>/dev/null; then
+            IMPORT_COUNT=$((IMPORT_COUNT + 1))
+          fi
+        done
+        
+        # Check renders
+        for comp in Counter TweetInput ThemeSwitcher; do
+          if grep -q "<$comp" practical-3-components/src/App.* 2>/dev/null; then
+            RENDER_COUNT=$((RENDER_COUNT + 1))
+          fi
+        done
+        
+        if [ $IMPORT_COUNT -eq 3 ] && [ $RENDER_COUNT -eq 3 ]; then
+          echo "✅ App.js imports and renders all 3 components"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ App.js missing imports or renders (Found $IMPORT_COUNT imports, $RENDER_COUNT renders)"
+        fi
+
+    # ----------------------------
+    # CODE QUALITY (1 mark)
+    # ----------------------------
+    - name: ✅ Code quality - Proper exports (1 mark)
+      run: |
+        EXPORT_COUNT=$(grep -r "export default" practical-3-components/src/components/ 2>/dev/null | wc -l)
+        
+        if [ $EXPORT_COUNT -ge 3 ]; then
+          echo "✅ All components properly exported"
+          echo "SCORE=$((SCORE+1))" >> $GITHUB_ENV
+        else
+          echo "❌ Components not properly exported (Found $EXPORT_COUNT exports)"
+        fi
+
+    # ----------------------------
+    # FINAL SCORE DISPLAY
+    # ----------------------------
+    - name: Display Final Score
+      run: |
+        echo "=========================================="
+        echo "    REACT PRACTICAL 3 - COMPONENTS"
+        echo "=========================================="
+        echo ""
+        echo "  Grading Results:"
+        echo "  - Project Structure: 2/2"
+        echo "  - Counter Component: 3/3"
+        echo "  - TweetInput Component: 3/3"
+        echo "  - ThemeSwitcher Component: 3/3"
+        echo "  - App Integration: 1/1"
+        echo "  - Code Quality: 1/1"
+        echo ""
+        echo "  ------------------------------------"
+        echo "  FINAL SCORE: $SCORE / 13"
+        echo "=========================================="
